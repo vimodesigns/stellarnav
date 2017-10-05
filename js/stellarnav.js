@@ -18,7 +18,7 @@
 			theme     : 'plain', // adds default color to nav. (light, dark)
 			breakpoint: 768, // number in pixels to determine when the nav should turn mobile friendly
 			phoneBtn: false, // adds a click-to-call phone link to the top of menu - i.e.: "18009084500"
-	    		locationBtn: false, // adds a location link to the top of menu - i.e.: "/location/", "http://site.com/contact-us/"
+	    	locationBtn: false, // adds a location link to the top of menu - i.e.: "/location/", "http://site.com/contact-us/"
 			sticky     : false, // makes nav sticky on scroll (desktop only)
 			position: 'static', // 'static' or 'top' - when set to 'top', this forces the mobile nav to be placed absolutely on the very top of page 
 			showArrows: true, // shows dropdown arrows next to the items that have sub menus
@@ -37,31 +37,33 @@
 				breakpoint = settings.breakpoint;
 			}
 
-			// adds a location page link to the beginning of nav
-			if (settings.locationBtn) {
-				
-				if(!settings.phoneBtn) {
-					var cssClass = 'full';
-				} else {
-					var cssClass = '';
-				}
+			// css classes for main menu mobile buttons
+			if( settings.phoneBtn && settings.locationBtn ) {
+				var cssClass = 'third';
+			} else if( settings.phoneBtn || settings.locationBtn ) {
+				var cssClass = 'half';
+			} else {
+				var cssClass = 'full';
+			}
 
-				var btn = '<li class="call-btn-location ' + cssClass + '"><a href="'+ settings.locationBtn +'"><i class="fa fa-map-marker"></i> Location</a></li>';
-				nav.find('ul:first').prepend(btn);
+			// adds the toggle button to open and close nav 
+			nav.prepend('<a href="#" class="menu-toggle ' + cssClass + '"><i class="fa fa-bars"></i> Menu</a>');
+
+			// adds a click-to-call link
+			if (settings.phoneBtn) {
+
+				var btn = '<a href="tel:'+ settings.phoneBtn +'" class="call-btn-mobile ' + cssClass + '"><i class="fa fa-phone"></i> <span>Call us</span></a>';
+
+				nav.find('a.menu-toggle').after(btn);
 
 			}
 
-			// adds a click-to-call link to the beginning of nav
-			if (settings.phoneBtn) {
+			// adds a location page link to the beginning of nav
+			if (settings.locationBtn) {
 				
-				if(!settings.locationBtn) {
-					var cssClass = 'full';
-				} else {
-					var cssClass = '';
-				}
+				var btn = '<a href="'+ settings.locationBtn +'" class="location-btn-mobile ' + cssClass + '" target="_blank"><i class="fa fa-map-marker"></i> <span>Location</span></a>';
 
-				var btn = '<li class="call-btn-mobile ' + cssClass + '"><a href="tel:'+ settings.phoneBtn +'"><i class="fa fa-phone"></i> Call us</a></li>';
-				nav.find('ul:first').prepend(btn);
+				nav.find('a.menu-toggle').after(btn);
 
 			}
 
@@ -84,11 +86,21 @@
 				nav.addClass('top');
 			}
 
+			if (settings.position == 'right') {
+				nav.addClass('right');
+				nav.find('ul:first').prepend('<li><a href="#" class="close-menu"><i class="fa fa-close"></i> Close Menu</a></li>');
+			}
+
+			if (settings.position == 'left') {
+				nav.addClass('left');
+				nav.find('ul:first').prepend('<li><a href="#" class="close-menu"><i class="fa fa-close"></i> Close Menu</a></li>');
+			}
+
 			if (!settings.showArrows) {
 				nav.addClass('hide-arrows');
 			}
 
-			if (settings.closeBtn) {
+			if (settings.closeBtn && !(settings.position == 'right' || settings.position == 'left')) {
 				// adds a link to end of nav to close it
 				nav.find('ul:first').append('<li><a href="#" class="close-menu"><i class="fa fa-close"></i> Close Menu</a></li>');
 			}
@@ -96,21 +108,45 @@
 			if (settings.scrollbarFix) {
 				$('body').addClass('stellarnav-noscroll-x');
 			}
-					
-			// adds the toggle button to open and close nav 
-			nav.prepend('<a href="#" class="menu-toggle"><i class="fa fa-bars"></i> Menu</a>');
 
 			// opens and closes menu			
 			$('.menu-toggle').on('click', function(e) {
-				e.preventDefault();
-				nav.find('ul:first').stop(true, true).slideToggle(250);
-				nav.toggleClass('active');
+				e.stopPropagation();
+
+				// if nav position is left or right, uses fadeToggle instead of slideToggle
+				if (settings.position == 'left' || settings.position == 'right') {
+					nav.find('ul:first').stop(true, true).fadeToggle(250);
+					nav.toggleClass('active');
+
+					if(nav.hasClass('active') && nav.hasClass('mobile')) {
+						// closes the menu when clicked outside of it
+						$(document).on('click', function(event) {
+							// ensures menu hides only on mobile nav
+							if(nav.hasClass('mobile')) {
+							  	if (!$(event.target).closest(nav).length) {
+							  		nav.find('ul:first').stop(true, true).fadeOut(250);	
+							  		nav.removeClass('active');
+								}
+							}
+						});
+					}
+
+				} else {
+					// static position - normal open and close animation
+					nav.find('ul:first').stop(true, true).slideToggle(250);
+				}
 			});
 
-			// actives the close button
+			// activates the close button
 			$('.close-menu').click(function() {
-				nav.find('ul:first').stop(true, true).slideUp(250).toggleClass('active');
+				
 				nav.removeClass('active');
+
+				if (settings.position == 'left' || settings.position == 'right') {
+					nav.find('ul:first').stop(true, true).fadeToggle(250);
+				} else {
+					nav.find('ul:first').stop(true, true).slideUp(250).toggleClass('active');
+				}
 			});
 			
 
@@ -148,7 +184,7 @@
 			
 			// check browser width in real-time
 			function windowCheck() {
-				var browserWidth = window.outerWidth;
+				var browserWidth = window.innerWidth;
 				
 				if(browserWidth <= breakpoint) {
 					// mobile/tablet nav
